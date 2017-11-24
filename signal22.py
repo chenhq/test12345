@@ -4,7 +4,9 @@ from stratege.ma import *
 from stratege.dummy import *
 from stratege.close_stratege import *
 
-market = pd.read_csv("~/cs_market.csv", parse_dates=["date"], dtype={"code": str})
+# market = pd.read_csv("~/cs_market.csv", parse_dates=["date"], dtype={"code": str})
+
+market = pd.read_csv("E:\market_data/cs_market.csv", parse_dates=["date"], dtype={"code": str})
 
 ohlcv = market.drop(["Unnamed: 0", "total_turnover", "limit_up", "limit_down"], axis=1)
 
@@ -28,33 +30,36 @@ f_double_ma_signal = double_ma_stratege(zz500, 3, 20)
 
 i_double_ma_signal = signal_full2increment(f_double_ma_signal)
 
-pd.concat([f_double_ma_signal, i_double_ma_signal], axis=1).tail(10)
+signal_compare = pd.concat([f_double_ma_signal, i_double_ma_signal], axis=1)
+signal_compare.plot(figsize=(21, 7))
 
-open_signal_copy = i_double_ma_signal.copy()
-
+open_signal = i_double_ma_signal
 ohlcv = zz500
+colse_signal = close_signal_generate(ohlcv, open_signal, close_MaxLoss_ATR, loss_pct=0.02, atr_times=0.5)
 
-colse_signal = close_signal_generate(ohlcv, open_signal_copy, close_MaxLoss_ATR, loss_pct=0.02, atr_times=0.5)
+(colse_signal.fillna(0) + 1).cumprod().plot()
 
 results = pd.DataFrame()
 
-for int_lost_pct in range(1, 6):
-    lost_pct = int_lost_pct / 100.0
-    for int_atr_times in range(1, 20):
-        atr_times = 0.1 * int_atr_times
-        print("lost_pct: {:.2}, atr_times: {:.2}".format(lost_pct, atr_times))
+# for int_lost_pct in range(1, 6):
+#     lost_pct = int_lost_pct / 100.0
+#     for int_atr_times in range(1, 20):
+#         atr_times = 0.1 * int_atr_times
+#         print("lost_pct: {:.2}, atr_times: {:.2}".format(lost_pct, atr_times))
+#
+#         close_signal = close_signal_generate(ohlcv, open_signal_copy, close_MaxLoss_ATR, loss_pct=lost_pct, atr_times=atr_times)
+#
+#         returns = signal2return(ohlcv, open_signal_copy, close_signal)
+#
+#         returns.name = "lost{:.2}_atr{:.2}".format(lost_pct, atr_times)
+#         results = pd.concat([results, returns], axis=1)
+#
+# results.to_csv("results.csv")
 
-        close_signal = close_signal_generate(ohlcv, open_signal_copy, close_MaxLoss_ATR, loss_pct=lost_pct, atr_times=atr_times)
+# (results.fillna(0) + 1).cumprod().plot()
+# plt.show()
 
-        returns = signal2return(ohlcv, open_signal_copy, close_signal)
 
-        returns.name = "lost{:.2}_atr{:.2}".format(lost_pct, atr_times)
-        results = pd.concat([results, returns], axis=1)
-
-results.to_csv("results.csv")
-
-(results.fillna(0) + 1).cumprod().plot()
-plt.show()
 
 
 """

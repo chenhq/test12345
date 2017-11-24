@@ -64,23 +64,38 @@ def close_signal_generate(ohlcv, open_signal, computing_func, **kwargs):
     df = pd.concat([ohlcv, open_signal], axis=1)
     df['close_signal'] = np.nan
 
-    for open_idx, _ in df.iterrows():
-        open_signal = df.loc[open_idx, 'open_signal']
-        if (not np.isnan(open_signal)) and open_signal != 0:
-            end = False
-            for close_idx, _ in df.loc[open_idx:].iterrows():
-                close_signal, end = computing_func(df, open_idx, close_idx, open_signal, **kwargs)
+    # 初始化
+    i_open_idx = 0
+    length = len(df)
+    while i_open_idx < length:
+        open_idx = df.index[i_open_idx]
+        # print("i_open_idx: {}, open_idx: {}".format(i_open_idx, open_idx))
+        open_signal = df.loc[open_idx]['open_signal']
+        if np.isnan(open_signal):
+            open_signal = 0
+
+        if open_signal != 0:
+            i_close_idx = i_open_idx
+            while i_close_idx < length:
+                close_idx = df.index[i_close_idx]
+                close_signal = computing_func(df, open_idx, close_idx, open_signal, **kwargs)
                 if np.isnan(close_signal):
+                    i_close_idx += 1
                     continue
 
-                if np.isnan(df.loc[close_idx, 'close_signal']):
+                if np.isnan(df.loc[close_idx]['close_signal']):
                     df.loc[close_idx, 'close_signal'] = close_signal
                 else:
-                    df.loc[close_idx, 'close_signal'] = df.loc[close_idx, 'close_signal'] + close_signal
+                    df.loc[close_idx]['close_signal'] = df.loc[close_idx]['close_signal'] + close_signal
 
-                if end:
+                open_signal = open_signal + close_signal
+
+                if abs(open_signal) <= 0.001:
                     break
-    df.to_csv("sss3.csv")
+
+        i_open_idx += 1
+
+    # df.to_csv("sss3.csv")
     return df['close_signal']
 
 
